@@ -1,0 +1,21 @@
+name: Native C tests
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify browser teaching model
+        run: node demo/model.test.cjs
+      - name: Compile and run both suites
+        run: |
+          mkdir -p build
+          for suite in main edge_tests; do
+            gcc -std=c11 -Wall -Wextra -Werror -O2 src/radio.c src/mock.c src/$suite.c -o build/$suite
+            ./build/$suite
+          done

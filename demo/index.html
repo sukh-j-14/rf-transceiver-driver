@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore a fictional register-based RF transceiver driver: initialize, tune, transmit, and inject faults. Software-only JavaScript companion to a native C project.">
+  <title>RF Lab · Transceiver Driver</title><link rel="stylesheet" href="style.css">
+  <script src="model.js" defer></script><script src="app.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="./"><span class="brand-icon">≋</span> RF LAB <span class="edition">/ DRIVER EXPLORER</span></a><a href="https://github.com/sukh-j-14/rf-transceiver-driver">View C source ↗</a></header>
+<main>
+  <section class="intro"><div><p class="eyebrow">SOFTWARE SYSTEMS / 001</p><h1>Inside the<br><span>transceiver.</span></h1><p class="lede">Follow a byte from API call to register write.<br>Explore state, bounded polling, and fault recovery.</p></div><div class="scope"><span class="dot"></span> SOFTWARE ONLY<p>This interactive companion runs a <strong>JavaScript teaching model</strong> of the C driver and fictional register bank. It does not execute native C, FreeRTOS, or RF hardware.</p><a href="#walkthrough">How the driver works ↓</a></div></section>
+  <div class="section-label"><span>01 / WORKBENCH</span><span>CHANGE INPUTS. OBSERVE THE BUS.</span></div>
+  <section class="workbench" aria-label="Interactive workbench">
+    <div class="panel controls"><div class="panel-heading"><h2>Command console</h2><span class="tag">JS MODEL</span></div>
+      <label for="budget">Poll budget <small>1–10,000 status reads per operation</small></label><input id="budget" type="number" min="1" max="10000" value="3">
+      <button id="init" class="primary">01 <span>Initialize / recover</span> ↗</button>
+      <label for="frequency">Frequency <small>700,000–6,000,000 kHz</small></label><div class="input-unit"><input id="frequency" type="number" min="700000" max="6000000" value="3500000"><span>kHz</span></div>
+      <button id="tune">02 <span>Tune frequency</span> ↗</button>
+      <label for="payload">Payload <small>1–64 bytes, space-separated hexadecimal</small></label><input id="payload" value="01 02 03 FF" spellcheck="false" autocomplete="off">
+      <button id="send">03 <span>Send payload</span> ↗</button>
+      <fieldset><legend>Fault injection</legend><label class="check"><input type="checkbox" id="bus-fault"> Bus reads / writes fail</label><label class="check"><input type="checkbox" id="stuck"> Status never progresses</label></fieldset>
+      <button id="reset" class="subtle">Reset entire workbench</button>
+    </div>
+    <div class="monitor"><div class="panel state-panel"><div class="panel-heading"><h2>Driver state</h2><span id="state" class="tag">UNINITIALIZED</span></div><div class="metrics"><div><span>TUNED FREQUENCY</span><strong id="tuned">—</strong></div><div><span>LAST RESULT</span><strong id="result" role="status">—</strong></div></div><p id="feedback">Start by initializing the radio. Default readiness takes three status reads.</p></div>
+      <div class="panel registers"><div class="panel-heading"><h2>Register bank</h2><span class="muted">FICTIONAL / 32-BIT</span></div><table><thead><tr><th>Register</th><th>Hex value</th><th>Meaning</th></tr></thead><tbody id="registers"></tbody></table><p class="buffer-label">STAGED PAYLOAD <span id="length">0 / 64 bytes</span></p><output id="buffer">Empty</output><p class="footnote">The mock records staged bytes and wraps at capacity; this is not a packet queue.</p></div>
+      <div class="panel trace-panel"><div class="panel-heading"><h2>Bus trace</h2><span class="muted">LATEST OPERATION</span></div><pre id="trace" tabindex="0" aria-label="Bus trace">Waiting for a command…</pre></div>
+    </div>
+  </section>
+  <section id="walkthrough"><div class="section-label"><span>02 / UNDER THE HOOD</span><span>NATIVE C ARCHITECTURE</span></div><div class="steps"><article><span>01</span><h3>Inject the bus</h3><p>The driver receives read and write callbacks. The mock supplies an in-memory register bank, keeping the C API independent of its transport.</p><code>radio_init(&amp;r, bus, polls)</code></article><article><span>02</span><h3>Bound every wait</h3><p>Initialization waits for READY; sending waits for DONE. Each operation stops after its status-read budget. These are poll counts, not milliseconds.</p><code>RF_OK · RF_IO · RF_TIMEOUT</code></article><article><span>03</span><h3>Recover explicitly</h3><p>A failed send may leave partial data or an in-progress operation. Clear the fault, reinitialize, retune, and send again. Calls must be serialized.</p><code>initialize → tune → send</code></article></div></section>
+  <aside class="experiment"><div><p class="eyebrow">TRY THIS EXPERIMENT</p><h2>Make completion arrive too late.</h2><p>Initialize and tune with budget 3. Change the budget to 2 and send: TIMEOUT. Restore 3 and send again: OK. TX clears the previous DONE bit.</p></div><span aria-hidden="true">2 → 3</span></aside>
+</main><footer><span>RF LAB / SIMULATED TRANSCEIVER DRIVER</span><span>Native C core · Browser teaching companion · No hardware</span></footer>
+</body></html>
